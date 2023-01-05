@@ -7,6 +7,7 @@ BOOTLOADER = caterina
 # Build Options
 #   change yes to no to disable
 #
+# COMBO_ENABLE = yes
 BOOTMAGIC_ENABLE = no       # Enable Bootmagic Lite
 MOUSEKEY_ENABLE = yes        # Mouse keys
 EXTRAKEY_ENABLE = no        # Audio control and System control
