@@ -11,8 +11,8 @@
 #define AWSM_LW LGUI(KC_LEFT)
 
 typedef enum {
-    NUMBERS,
-    NAVIGATION
+    NAVIGATION = 1,
+    NUMBERS = 2
 } LAYERS;
 
 // Define a type for as many tap dance states as you need
@@ -34,6 +34,6 @@ struct td_tap_t {
 };
 
 enum {
-  AWE, // Our custom tap dance key; add any other tap dance keys to this enum 
+  AWE = 0, // Our custom tap dance key; add any other tap dance keys to this enum 
   GRV_HOME,
 };

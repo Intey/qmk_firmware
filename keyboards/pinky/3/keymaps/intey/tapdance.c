@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "defs.h"
 #include "quantum.h"
 
@@ -18,32 +19,44 @@ static struct td_tap_t ql_tap_state = {.is_press_action = true, .state = TD_NONE
 //// BEGIN: Advanced Tap Dances
 int cur_dance(qk_tap_dance_state_t *state) {
     if (state->count == 1) {
-        if (state->interrupted || !state->pressed) return TD_SINGLE_TAP;
+        if (state->interrupted || !state->pressed) {
+            uprintf("single tap\n");
+            return TD_SINGLE_TAP;
+        }
         // key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
-        else
+        else {
+            uprintf("single hold\n");
             return TD_SINGLE_HOLD;
+        }
     } else if (state->count == 2) {
         /*
          * TD_DOUBLE_SINGLE_TAP is to distinguish between typing "pepper", and actually wanting a double tap
          * action when hitting 'pp'. Suggested use case for this return value is when you want to send two
          * keystrokes of the key, and not the 'double tap' action/macro.
          */
-        if (state->interrupted)
+        if (state->interrupted) {
+            uprintf("double tap\n");
             return TD_DOUBLE_SINGLE_TAP;
-        else if (state->pressed)
+        } else if (state->pressed) {
+            uprintf("double hold\n");
+
             return TD_DOUBLE_HOLD;
-        else
+        } else {
+            uprintf("double tap\n");
             return TD_DOUBLE_TAP;
-        if (state->count == 3) {
-            if (state->interrupted || !state->pressed)
-                return TD_TRIPLE_TAP;
-            else
-                return TD_TRIPLE_HOLD;
-        } else
-            return TD_UNKNOWN;
+        }
+    }
+    if (state->count == 3) {
+        if (state->interrupted || !state->pressed) {
+            uprintf("triple tap\n");
+            return TD_TRIPLE_TAP;
+        }
+        uprintf("triple hold\n");
+        return TD_TRIPLE_HOLD;
     } else {
         return TD_UNKNOWN;
     }
+    return TD_UNKNOWN;
 }
 
 // Functions that control what our tap dance key does
@@ -52,14 +65,17 @@ void ql_finished(qk_tap_dance_state_t *state, void *user_data) {
     switch (ql_tap_state.state) {
         case TD_SINGLE_HOLD:
             layer_on(NUMBERS);
-            tap_code(KC_LGUI);
+            register_code16(KC_LGUI);
             break;
         case TD_DOUBLE_HOLD:
-            if (layer_state_is(NUMBERS)) {
-                layer_off(NUMBERS);
+            if (!layer_state_is(NUMBERS)) {
+                layer_on(NUMBERS);
             }
-            tap_code(KC_LGUI);
+            register_mods(MOD_LSFT);
+            register_code16(KC_LGUI);
             break;
+        case TD_TRIPLE_HOLD:
+            register_code16(KC_LGUI);
         default:
             break;
     }
@@ -67,9 +83,13 @@ void ql_finished(qk_tap_dance_state_t *state, void *user_data) {
 
 void ql_reset(qk_tap_dance_state_t *state, void *user_data) {
     // If the key was held down and now is released then switch off the layer
-    if (ql_tap_state.state == TD_SINGLE_HOLD || ql_tap_state.state == TD_DOUBLE_HOLD) {
+    if (ql_tap_state.state == TD_SINGLE_HOLD) {
         layer_off(NUMBERS);
+    } else if (ql_tap_state.state == TD_DOUBLE_HOLD) {
+        layer_off(NUMBERS);
+        unregister_mods(MOD_LSFT);
     }
+    unregister_code16(KC_LGUI);
     ql_tap_state.state = TD_NONE;
 }
 
