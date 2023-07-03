@@ -20,12 +20,10 @@ static struct td_tap_t ql_tap_state = {.is_press_action = true, .state = TD_NONE
 int cur_dance(qk_tap_dance_state_t *state) {
     if (state->count == 1) {
         if (state->interrupted || !state->pressed) {
-            uprintf("single tap\n");
             return TD_SINGLE_TAP;
         }
         // key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
         else {
-            uprintf("single hold\n");
             return TD_SINGLE_HOLD;
         }
     } else if (state->count == 2) {
@@ -35,24 +33,23 @@ int cur_dance(qk_tap_dance_state_t *state) {
          * keystrokes of the key, and not the 'double tap' action/macro.
          */
         if (state->interrupted) {
-            uprintf("double tap\n");
             return TD_DOUBLE_SINGLE_TAP;
         } else if (state->pressed) {
-            uprintf("double hold\n");
-
             return TD_DOUBLE_HOLD;
         } else {
-            uprintf("double tap\n");
             return TD_DOUBLE_TAP;
         }
-    }
-    if (state->count == 3) {
+    } else if (state->count == 3) {
         if (state->interrupted || !state->pressed) {
-            uprintf("triple tap\n");
             return TD_TRIPLE_TAP;
         }
-        uprintf("triple hold\n");
         return TD_TRIPLE_HOLD;
+    } else if (state->count == 4) {
+        uprintf("quad detect");
+        if (state->interrupted || !state->pressed) {
+            return TD_QUAD_TAP;
+        }
+        return TD_QUAD_HOLD;
     } else {
         return TD_UNKNOWN;
     }
@@ -64,18 +61,25 @@ void ql_finished(qk_tap_dance_state_t *state, void *user_data) {
     ql_tap_state.state = cur_dance(state);
     switch (ql_tap_state.state) {
         case TD_SINGLE_HOLD:
+            uprintf("single");
             layer_on(NUMBERS);
             register_code16(KC_LGUI);
             break;
         case TD_DOUBLE_HOLD:
-            if (!layer_state_is(NUMBERS)) {
-                layer_on(NUMBERS);
-            }
+            uprintf("double");
             register_mods(MOD_LSFT);
             register_code16(KC_LGUI);
             break;
         case TD_TRIPLE_HOLD:
+            uprintf("triple");
+            layer_on(NUMBERS);
+            register_mods(MOD_LSFT);
             register_code16(KC_LGUI);
+            break;
+        case TD_QUAD_HOLD:
+            uprintf("quad");
+            register_code16(KC_LGUI);
+            break;
         default:
             break;
     }
@@ -86,6 +90,8 @@ void ql_reset(qk_tap_dance_state_t *state, void *user_data) {
     if (ql_tap_state.state == TD_SINGLE_HOLD) {
         layer_off(NUMBERS);
     } else if (ql_tap_state.state == TD_DOUBLE_HOLD) {
+        unregister_mods(MOD_LSFT);
+    } else if (ql_tap_state.state == TD_TRIPLE_HOLD) {
         layer_off(NUMBERS);
         unregister_mods(MOD_LSFT);
     }
@@ -99,7 +105,7 @@ uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
         case GRV_HOME:
             return TAPPING_TERM;
         case QK_TAP_DANCE ... QK_TAP_DANCE_MAX:
-            return 275;
+            return 100;
         default:
             return TAPPING_TERM;
     }
@@ -110,14 +116,16 @@ void grave_home_dance(qk_tap_dance_state_t *state, void *user_data) {
         int mod_state = get_mods();
         // if shift is held - unshift (send grave) and restore
         if (mod_state & MOD_MASK_SHIFT) {
-            del_mods(MOD_MASK_SHIFT);
+            uprintf("send grv\n");
+            unregister_mods(MOD_LSFT);
             tap_code(KC_GRV);
-            set_mods(mod_state);
+            register_mods(MOD_LSFT);
             // send tild
         } else {
-            add_mods(MOD_BIT(MOD_LSFT));
+            uprintf("send tild\n");
+            register_mods(MOD_LSFT);
             tap_code(KC_GRV);
-            set_mods(mod_state);
+            unregister_mods(MOD_LSFT);
         }
     } else if (state->count == 2) {
         // in dvorak we need to send '[' instead '/' because they swapped

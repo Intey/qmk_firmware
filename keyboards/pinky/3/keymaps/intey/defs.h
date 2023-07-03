@@ -25,7 +25,9 @@ typedef enum {
     TD_DOUBLE_TAP,
     TD_DOUBLE_HOLD,
     TD_TRIPLE_TAP,
-    TD_TRIPLE_HOLD
+    TD_TRIPLE_HOLD,
+    TD_QUAD_TAP,
+    TD_QUAD_HOLD
 } td_state_t;
 
 struct td_tap_t {
